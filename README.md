@@ -4,11 +4,10 @@
 
 This project is designed for environments such as:
 
-* ISP / Telco backup systems (OLT, router, network configs)
+* ISP / Telco backup devices
 * FTP backup pipelines
 * Edge storage replication
 * Automated object storage ingestion
-* Infrastructure / DevOps workflows
 
 File changes are detected instantly using Linux **inotify**, then mirrored to object storage using **MinIO Client (mc)**.
 
@@ -17,12 +16,15 @@ File changes are detected instantly using Linux **inotify**, then mirrored to ob
 # Architecture Overview
 
 ```
-FTP Server → Local Directory → File2Object Watcher → Object Storage (RustFS / S3)
+Upload file via FTP Server or others → Local Directory → File2Object Watcher → Object Storage (RustFS / S3)
+
+![Architecture Overview](images/overview.png)
+
 ```
 
 Workflow:
 
-1. Device uploads backup to FTP server
+1. Device uploads backup to FTP server or others
 2. File stored in local directory
 3. File2Object detects filesystem event
 4. Automatic mirror to Object Storage
@@ -32,7 +34,7 @@ Workflow:
 
 # Features
 
-* Real-time file monitoring (no cron delay)
+* Real-time file monitoring
 * S3 compatible (RustFS, MinIO, AWS S3, Ceph, etc.)
 * Automatic sync on create / modify / delete
 * One-way mirror with cleanup support
@@ -48,13 +50,14 @@ Workflow:
 * Root or sudo privileges
 * FTP server installed (optional but common use case)
 * RustFS / S3 compatible object storage running
-* Internet access to download MinIO Client
+* MinIO Client
 
 Packages:
 
 ```
 inotify-tools
 wget
+MinIO Client
 ```
 
 ---
@@ -93,7 +96,7 @@ mcli --version
 Set alias to RustFS (S3 compatible):
 
 ```bash
-mcli alias set rustfs http://127.0.0.1:9000 ACCESS_KEY SECRET_KEY
+mcli alias set rustfs http://[IP_ADDRESS] ACCESS_KEY SECRET_KEY
 ```
 
 Test connection:
@@ -102,10 +105,17 @@ Test connection:
 mcli ls rustfs
 ```
 
-Create bucket if needed:
+Output:
 
 ```bash
-mcli mb rustfs/backup-olts
+root@RustFS:~# mcli ls rustfs
+[2026-02-09 06:52:43 UTC]     0B backup-files/
+```
+
+Create bucket if don't exist:
+
+```bash
+mcli mb rustfs/backup-files
 ```
 
 ---
@@ -124,7 +134,7 @@ Script:
 #!/bin/bash
 
 SOURCE="/home/ftp-backup/backup-files"
-TARGET="localrust/backup-files"
+TARGET="rustfs/backup-files"
 LOG="/var/log/file2object.log"
 
 inotifywait -m -r -e modify,create,delete,move "$SOURCE" |
@@ -180,6 +190,27 @@ Check status:
 systemctl status file2object
 ```
 
+Output:
+
+```bash
+root@RustFS:~# systemctl status file2object.service 
+* file2object.service - File2Object Realtime Sync Service
+     Loaded: loaded (/etc/systemd/system/file2object.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-02-09 09:47:26 UTC; 1 week 1 day ago
+   Main PID: 233 (file2object.sh)
+      Tasks: 3 (limit: 115889)
+     Memory: 29.5M (peak: 39.1M)
+        CPU: 1.472s
+     CGroup: /system.slice/file2object.service
+             |-233 /bin/bash /usr/local/bin/file2object.sh
+             |-234 inotifywait -m -r -e modify,create,delete,move /home/ftp-backup/backup-files
+             `-235 /bin/bash /usr/local/bin/file2object.sh
+
+Feb 09 09:47:26 RustFS systemd[1]: Started file2object.service - File2Object Realtime Sync Service.
+Feb 09 09:47:26 RustFS file2object.sh[234]: Setting up watches.  Beware: since -r was given, this may take a while!
+Feb 09 09:47:26 RustFS file2object.sh[234]: Watches established.
+```
+
 ---
 
 # Logging
@@ -203,14 +234,26 @@ tail -f /var/log/file2object.log
 Create test file:
 
 ```bash
-touch /home/ftp-backup/backup-olts/test.txt
+touch /home/ftp-backup/backup-files/TESTING/SW-1.cfg
+ls /home/ftp-backup/backup-files/TESTING
 ```
 
 Verify object storage:
 
 ```bash
-mcli ls rustfs/backup-olts
+mcli ls rustfs/backup-files/TESTING
 ```
+
+Output:
+
+```bash
+root@RustFS:~# ls /home/ftp-backup/backup-files/TESTING
+SW-1.cfg
+root@RustFS:~# mcli ls rustfs/backup-files/TESTING
+[2026-02-17 09:12:47 UTC]   384B STANDARD SW-1.cfg
+```
+
+![FTP to Bucket Architecture](images/ftp-to-bucket.png)
 
 ---
 
@@ -219,21 +262,21 @@ mcli ls rustfs/backup-olts
 Enable bucket versioning:
 
 ```bash
-mcli version enable rustfs/backup-olts
+mcli version enable rustfs/backup-files
 ```
 
-This protects data from accidental deletion when using `--remove`.
+This protects data from accidental deletion when using `--remove`. So if file is replaced with another file, the old file will be kept as a version.
+
+![Bucket Versioning](images/versioning.png)
 
 ---
 
 # Use Cases
 
-* OLT automatic backup ingestion
-* Router configuration archival
+* Network device configuration archival
 * Network infrastructure backup
 * FTP to Object Storage bridge
 * Edge data replication
-* DevOps artifact ingestion
 
 ---
 
