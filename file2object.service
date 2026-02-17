@@ -1,0 +1,11 @@
+[Unit]
+Description=File2Object Realtime Sync Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/file2object.sh
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
