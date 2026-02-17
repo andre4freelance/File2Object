@@ -193,9 +193,7 @@ Output:
 
 ```bash
 root@RustFS:~# systemctl status file2object.service 
-```markdown
 ● file2object.service - File2Object Realtime Sync Service
-```
      Loaded: loaded (/etc/systemd/system/file2object.service; enabled; preset: enabled)
      Active: active (running) since Mon 2026-02-09 09:47:26 UTC; 1 week 1 day ago
    Main PID: 233 (file2object.sh)
