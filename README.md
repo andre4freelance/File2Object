@@ -4,7 +4,7 @@
 
 This project is designed for environments such as:
 
-* ISP / Telco backup devices
+* ISP / Telco backup device configs
 * FTP backup pipelines
 * Edge storage replication
 * Automated object storage ingestion
@@ -18,9 +18,8 @@ File changes are detected instantly using Linux **inotify**, then mirrored to ob
 ```
 Upload file via FTP Server or others → Local Directory → File2Object Watcher → Object Storage (RustFS / S3)
 
-![Architecture Overview](images/overview.png)
-
 ```
+![Architecture Overview](images/overview.png)
 
 Workflow:
 
@@ -194,7 +193,9 @@ Output:
 
 ```bash
 root@RustFS:~# systemctl status file2object.service 
-* file2object.service - File2Object Realtime Sync Service
+```markdown
+● file2object.service - File2Object Realtime Sync Service
+```
      Loaded: loaded (/etc/systemd/system/file2object.service; enabled; preset: enabled)
      Active: active (running) since Mon 2026-02-09 09:47:26 UTC; 1 week 1 day ago
    Main PID: 233 (file2object.sh)
@@ -290,3 +291,10 @@ This protects data from accidental deletion when using `--remove`. So if file is
 For very large datasets consider batching or scheduled sync intervals.
 
 ---
+
+## Links
+
+Origin : 
+- [Origin](https://github.com/andre4freelance/File2Object)
+- [Linkedin post](https://www.linkedin.com/posts/link-andre-bastian_devops-sysadmin-cloudcomputing-activity-7429508697380282368-LO6y?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD73JlUBty-p-mBfMEW0-O4j0sv-e_PRQvc)
+- Facebook post
